@@ -19,8 +19,8 @@ class SetFixTest extends TestCase
 
         $lexer = new Lexer();
         $parser = new Parser();
-        $evaluator = new Evaluator($set, static fn(mixed $item) => $item['id'], true);
-        $tokens = $lexer->tokenise('*:value="Boo"|:value="Abra"');
+        $evaluator = new Evaluator($set, identifierKey: 'id', debug: true);
+        $tokens = $lexer->tokenise('(*:value="Abra")A');
         $ast = $parser->parse($tokens);
         
         dump($evaluator->evaluate($ast));

@@ -5,8 +5,8 @@ namespace SetFix\Parser;
 class Token
 {
     public function __construct(
-        private string $type,
-        private ?string $value = null
+        private readonly string $type,
+        private readonly ?string $value = null
     ){}
 
     public function getType(): string

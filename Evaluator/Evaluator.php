@@ -20,15 +20,14 @@ class Evaluator
 {
     public function __construct(
         private array $universe,
-        private Closure $identifierCallback,
+        private ?string $identifierKey = null,
+        private ?Closure $identifierCallback = null,
         private bool $debug = false
-        //private Closure $value
     ){}
 
     public function evaluate(QuerySet $querySet): array
     {
         $evaluated = $this->evaluateQuerySet($querySet);
-        if (count($evaluated) === 1) $evaluated = $evaluated[0];
         return $evaluated;
     }
 
@@ -148,8 +147,12 @@ class Evaluator
         };
     }
 
-    private function getItemById(string $id, array $set): array
+    private function getItemById(string $id, array $set): mixed
     {
-        return array_find($set, fn($item) => ($this->identifierCallback)($item) === $id);
+        if ($this->identifierKey) return array_find($set, fn($item) => $item[$this->identifierKey] === $id);
+        if ($this->identifierCallback) return array_find($set, fn($item) => ($this->identifierCallback)($item) === $id);
+
+        // Fallback to assumption that universe is a key => value array where key is the identifier
+        return array_find($set, fn($item, $itemKey) => $itemKey === $id);
     }
 }

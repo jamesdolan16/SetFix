@@ -17,19 +17,28 @@ class SetFix
     private Evaluator $evaluator;
 
     private function __construct(
-        private array &$set, 
-        private Closure $indentifierCallback, 
+        private array &$set,
+        private ?string $identifierKey,
+        private ?Closure $indentifierCallback, 
         private bool $debug
     )
     {
         $this->lexer = new Lexer();
         $this->parser = new Parser();
-        $this->evaluator = new Evaluator($set, $indentifierCallback, $debug);
+        $this->evaluator = new Evaluator($set, $identifierKey, $indentifierCallback, $debug);
     }
 
-    public static function fromArray(array $set, Closure $indentifierCallback, bool $debug): SetFix
+    public static function fromArray(
+        array &$set,
+        ?string $identifierKey = null,
+        ?Closure $indentifierCallback = null, 
+        bool $debug = false
+    ): SetFix
     {
-        return new self($set, $indentifierCallback, $debug);
+        if ($identifierKey && $indentifierCallback)
+            throw new \LogicException("Ambigious identifier config, can't have both key and callback");
+
+        return new self($set, $identifierKey, $indentifierCallback, $debug);
     }
 
     public function query(string $queryString): array
