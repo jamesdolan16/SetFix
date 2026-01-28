@@ -15,6 +15,6 @@ class MetadataIdentifier
     
     public function toString(int $depth)
     {
-        return "\n" . str_repeat(' ', $depth * 2) . "(MetadataIdentifier {$this->value})";
+        return "\n" . str_repeat(' ', $depth * 2) . "(MetadataIdentifier \"{$this->value}\")";
     }
 }

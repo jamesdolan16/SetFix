@@ -25,6 +25,7 @@ class Scalar
 
     public function toString(int $depth): string
     {
-        return "\n" . str_repeat(' ', $depth * 2) . "(Scalar {$this->value})";
+        $strRep = is_string($this->value) ? "\"{$this->value}\"" : $this->value;
+        return "\n" . str_repeat(' ', $depth * 2) . "(Scalar {$strRep})";
     }
 }

@@ -15,6 +15,6 @@ class Identifier
 
     public function toString(int $depth)
     {
-        return "\n" . str_repeat(' ', $depth * 2) . "(Identifier {$this->value})";
+        return "\n" . str_repeat(' ', $depth * 2) . "(Identifier \"{$this->value}\")";
     }
 }
