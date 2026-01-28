@@ -1,30 +1,30 @@
 # SetFix
-** What regex is to strings, but for finite sets
-## Indexed Attributes
-SetFix can only filter on attributes that are explicitly indexed or exposed by the universe. Attempting to filter a non-indexed attribute will result in an error.
+*What regex is to strings, but for finite sets*
+
 ## Syntax
 ### Sets
 ```
-*     : Select all elements in the universe
-(...) : Control the operator precedence
+*     : Select all elements in the universe, this set is called Universe
+(...) : Create a set from the inner query, this set is called a grouping 
 ```
 ### Set Operations
 ```
-Use the indexed key for Selection
-! : Exclusion
+! : Exclusion (NOT)
 | : Union (OR)
 & : Intersection (AND)
-: : Predicate Filter
+: : Filter by metadata predicate
+```
+### Filter Operations
+```
+<,<=,=,>=,> : Standard comparison operations
 ```
 ### Additional Operations
 ```
-, : Concatination
+, : Query Concatenation
 ```
 ## Examples
 ### Setup
-```
-PHP:
-
+```php
 $set = [
     ['code' => 'D', 'name' => 'Dog', 'age' => 3],
     ['code' => 'C', 'name' => 'Cat', 'age' => 5],
@@ -33,13 +33,12 @@ $set = [
 
 $qr = SetFix::fromArray(
     set: $set,
-    index: static fn(array $item) => $item['code']
-    value: static fn(array $item) => $item['name']
+    identifierCallback: static fn(array $item) => $item['code']
 );
 
 $selection = $qr->query(...);
 ```
-### Selection
+### Queries
 ```
 *D|C            => ['Dog', 'Cat']
 *:age<5         => ['Dog', 'Frog']
@@ -48,6 +47,7 @@ $selection = $qr->query(...);
 *D,*D|C,*D|C|F  => [['Dog'], ['Dog', 'Cat'], ['Dog', 'Cat', 'Frog']]
 ```
 ## Grammar
+```
 querySet            := query (',' query)*
 query               := set selection?
 set                 := universe|grouping
@@ -61,24 +61,31 @@ metadataPredicate   := ':' metaId comparison term
 term                := itemId | scalar
 comparison          := < | <= | = | >= | >
 universe            := *
-scalar              := any_scalar_value
-
+scalar              := string | float | int
+string              := '"' (a-zA-Z_-.)* '"' 
+float               := int '.' (0-9)+
+int                 := '-'? (0-9)*
+```
+## Debug
+Debug output can be activated by passing true to the debug flag when instantiating an **Evaluator**, this causes the **Evaluator** to print the AST for the parsed query in Lisp format.
+```clojure
 (QuerySet
   (Query
-    (Set (Universe))
-    (Selection
-      (Union
-        (Intersections
-          (Intersection
-            (Unaries
-              (Filter
-                (MetadataPredicate
-                    (MetaId 'age')
-                    (Comparison '>')
-                    (Scalar 5)))
-              (Filter
-                (MetadataPredicate
-                    (MetaId 'age')
-                    (Comparison '<')
-                    (Scalar 10))))))))))
+    (Universe)
+    (Union
+      (Intersection
+        (Filter
+          (MetadataPredicate
+            (MetadataIdentifier "value")
+            (Comparison =)
+            (Term
+              (Scalar "Boo"))))
+      (Intersection
+        (Filter
+          (MetadataPredicate
+            (MetadataIdentifier "value")
+            (Comparison =)
+            (Term
+              (Scalar "Abra")))))))
+```
             
