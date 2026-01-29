@@ -218,10 +218,12 @@ Shift allows you to drop the first, or the last n elements from a set as follows
 ```
 #### Stride
 Stride allows you to select only every nth element from a set, see below:
+```
 (*A|B|C)~2  # Evaluates to [A, C]
 (*A|B)~2    # Evaluates to [A]
 (*A|B|C)~1  # Evaluates to [A, B, C]
 (*A|B|C)~0  # Evaluates to []
+```
 ### Constructions
 Constructions are a proposed feature that will facilitate structured output from SetFix queries. New stuff:
 #### Primitive Construction
