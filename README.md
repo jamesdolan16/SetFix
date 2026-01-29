@@ -1,5 +1,5 @@
 # SetFix
-*What regex is to strings, but for finite sets*
+A macro-extensible algebra for querying and constructing finite sets
 
 ## Syntax
 ### Sets
