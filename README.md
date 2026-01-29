@@ -268,13 +268,6 @@ Which evaluates to the following, that can easily be converted to proper host la
   ["all", juniors]
 ]
 ```  
-```
 #### Product Operator `//`
-```
-between key a b :: :key>a&:key<b;
-juniors := *[between age 5 10];
-tall := juniors:height>1000;
-short := juniors!tall;            # Expands to (*[between age 5 10])!((*[between age 5 10]):height>1000)
-                                  # Parser could factor out second (*[between age 5 10]) and flatten to
-                                  # (*[between age 5 10])!:height>1000
+
     
