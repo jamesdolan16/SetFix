@@ -91,7 +91,7 @@ Debug output can be activated by passing true to the debug flag when instantiati
             (Term
               (Scalar "Abra")))))))
 ```
-## The Future of SetFix
+## Planned Features
 ### Named Sets
 Named Sets are a proposed feature to allow for more composable query definitions. You can assign any valid set a name
 using the new assignment operator `:=`. Your named set can then be used many times within further queries.
@@ -247,7 +247,7 @@ Example
 ```
 (*A|B|C)/(*D|E|F) # Evaluates to [[A,D], [B,E], [C,F]]
 ```
-An huge benefit provided by the Zip Operator is apparent when you marry it with Macros and Extended Set Operations, below is the implementation of the `kv` Macro (Key-Value):
+An huge benefit provided by the Zip Operator is made apparent when you marry it with Macros and Extended Set Operations, below is the implementation of the `kv` Macro (Key-Value):
 ```
 kv items :: keys := (items~2)/((items>>1)~2)
 ```
@@ -269,5 +269,14 @@ Which evaluates to the following, that can easily be converted to proper host la
 ]
 ```  
 #### Product Operator `//`
+```
+lj leftSet leftField rightSet rightField :: 
+  product         := left//right
+  matches         := product:(@0.leftField = @1.rightField)
+  matchedLeft     := matches\0
+  unmatchedLeft   := leftSet ! matchedLeft
+  padded          := unmatchedLeft // ({})
+  matches | padded
 
-    
+[lj users id orders userid]
+```
