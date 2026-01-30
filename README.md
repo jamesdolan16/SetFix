@@ -269,14 +269,64 @@ Which evaluates to the following, that can easily be converted to proper host la
 ]
 ```  
 #### Product Operator `//`
+```php
+$users = [
+    'a' => ['id' => 0, 'name' => 'Billy Bob'],
+    'b' => ['id' => 1, 'name' => 'Joe Bloggs'],
+    'c' => ['id' => 2, 'name' => 'John Smith'] 
+];
+$orders = [
+    'a' => ['id' => 0, 'userId' => 0, 'desc' => '3 Hammers'],
+    'b' => ['id' => 1, 'userId' => 0, 'desc' => '12 Nails'],
+    'c' => ['id' => 2, 'userId' => 2, 'desc' => 'A Sandwich'] 
+];
+$sf = SetFix::fromArrays($users, $orders);
+echo $sf->query(...);
 ```
+```setfix
 lj leftSet leftField rightSet rightField :: 
-  product         := left//right
-  matches         := product:(@0.leftField = @1.rightField)
-  matchedLeft     := matches\0
-  unmatchedLeft   := leftSet ! matchedLeft
-  padded          := unmatchedLeft // ({})
-  matches | padded
+  product                         := left//right
+  [productLeft, productRight]     := product\2
+  matchedLeft                     := productLeft:leftField = productRight.rightField
+  matchedRight                    := productRight:rightField = productLeft.leftField
+  matches                         := matchedLeft/matchedRight
+  unmatchedLeft                   := leftSet!matchedLeft
+  padded                          := unmatchedLeft//()
+  matches|padded
 
 [lj users id orders userid]
+```
+Stepped Breakdown
+`product := left//right`
+```
+[[a,a], [a,b], [a,c]. [b,a], [b,b], [b,c], [c,a], [c,b], [c,c]]    # Left value is identity from set $users, right value is identity from set $orders
+```
+`[productLeft, productRight] := product\2`
+```
+[a,a,a,b,b,b,c,c,c]                                                # Left identities into set productLeft
+[a,b,c,a,b,c,a,b,c]                                                # Right identities into set productRight
+```
+`matchedLeft := productLeft:leftField = productRight.rightField`
+```
+[a,a,c]
+```
+`matchedRight := productRight:rightField = productLeft.leftField`
+```
+[a,b,c]
+```
+`matches := matchedLeft/matchedRight`
+```
+[[a,a], [a,b], [c,c]]
+```
+`unmatchedLeft := leftSet!matchedLeft`
+```
+[b]
+```
+`padded := unmatchedLeft//()`
+```
+[[b,()]]
+```
+`matches|padded`
+```
+[[a,a], [a,b], [c,c], [b,()]]
 ```
