@@ -68,6 +68,15 @@ scalar              := string | float | int
 string              := '"' (a-zA-Z_-.)* '"' 
 float               := int '.' (0-9)+
 int                 := '-'? (0-9)*
+
+statement             := definition* construction?
+definition            := assignment | macro ';'
+assignment            := groupings ':=' set ';'
+macro                 := macroId params '::' macroBody
+macroBody             := assignment* query
+construction          := '{' construction* '}' | sets
+sets                  := set ('|' set)*
+set                   := universe|grouping
 ```
 ## Debug
 Debug output can be activated by passing true to the debug flag when instantiating an **Evaluator**, this causes the **Evaluator** to print the AST for the parsed query in Lisp format.
@@ -89,7 +98,7 @@ Debug output can be activated by passing true to the debug flag when instantiati
             (MetadataIdentifier "value")
             (Comparison =)
             (Term
-              (Scalar "Abra")))))))
+              (Scalar "Abra")))))))))
 ```
 ## Planned Features
 ### Named Sets
@@ -267,7 +276,14 @@ Which evaluates to the following, that can easily be converted to proper host la
   ["heightGrouped, [["tall", tall], ["short", short]]],
   ["all", juniors]
 ]
-```  
+```
+#### Unzip Operator `\`
+```
+[[a,b,c], [1,2,3]]\0            # [] 
+[[a,b,c], [1,2,3]]\1            # [[a,1]]
+[[a,b,c], [1,2,3]]\2            # [[a,1], [b,2]]
+[[a,b,c], [1,2,3], [i,j,k]]\3   # [[a,1,i], [b,2,j], [c,3,k]]
+```
 #### Product Operator `//`
 ```php
 $users = [
@@ -285,16 +301,22 @@ echo $sf->query(...);
 ```
 ```setfix
 lj leftSet leftField rightSet rightField :: 
-  product                         := left//right
-  [productLeft, productRight]     := product\2
-  matchedLeft                     := productLeft:leftField = productRight.rightField
-  matchedRight                    := productRight:rightField = productLeft.leftField
-  matches                         := matchedLeft/matchedRight
+  product                         := leftSet//rightSet;
+  productLeft productRight        := product\2;
+  matchedLeft                     := productLeft:leftField = productRight.rightField;
+  matchedRight                    := productRight:rightField = productLeft.leftField;
+  matches                         := matchedLeft/matchedRight;
+  unmatchedLeft                   := leftSet!matchedLeft;
+  padded                          := unmatchedLeft//();
+  matches|padded;
+
+lj leftSet leftField rightSet rightField :: 
+  product                         := (leftSet//rightSet)\2
+  matched                         := product:0.leftField = 1.rightField
+  matchedLeft                     := matched\1
   unmatchedLeft                   := leftSet!matchedLeft
   padded                          := unmatchedLeft//()
   matches|padded
-
-[lj users id orders userid]
 ```
 Stepped Breakdown
 `product := left//right`
@@ -329,4 +351,84 @@ Stepped Breakdown
 `matches|padded`
 ```
 [[a,a], [a,b], [c,c], [b,()]]
+```
+
+## Reimplementation
+
+SetFix becomes Moss. Moss is a collection based langauge that values terseness, composabilty and ease of use
+Borrowing from SetFix:
+- Set operations
+- Operator driven syntax
+
+But adding:
+- First class functions
+- Constructions as core data structure
+- Recursion
+
+```
+map := [f xs -> xs ~> {} [acc item -> acc|{[f item]}]];
+flatMap := [f xs -> xs ~> {} [acc item -> acc|[f item]]];
+filter := [f xs -> xs ~> {} [acc item -> if [f item] then acc|{item}]];
+count := [f xs -> xs ~> 0 [acc item -> if [f item] then acc + 1]];
+
+program             := statement*
+statement           := (definition | expression) ';'
+definition          := id ':=' expression
+expression          := conditional
+conditional         := 'if' pipeline 'then' pipeline ('else' pipeline)? | pipeline
+pipeline            := concatenation ('~>' reducerBody)*
+concatenation       := comparison ('|' comparison)*
+comparison          := arithmetic (comparisonOperator arithmetic)?
+arithmetic          := term (addOperator term)*
+term                := unary (mulOperator mul)*
+unary               := unaryOperator unary | primary
+primary             := application | '(' expression ')' | construction | id | symbol | scalar
+application         := '[' call | lambda ']'
+reducerBody         := init (id|lambda)
+lambda              := params '->' lambdaBody
+params              := id*
+lambdaBody          := expression
+call                := expression (',' expression)*
+id                  := atom ('.' atom)*
+symbol              := ':' atom
+addOperator         := '+' | '-'
+mulOperator         := '*' | '/'
+comparisonOperator  :=  '<' | '<=' | '=' | !=' | '>' | '>='
+construction        := '{' constructionBody '}'
+constructionBody    := constructionElement? (',' constructionElement)*
+constructionElement := (construction | id | symbol | scalar)
+atom                := (a-zA-Z) (a-zA-Z0-9_-)*
+
+[kv [pair 'name' 'Jeremy']]
+people := {                       # Define construction called people
+  {   
+    {name 'Jeremy},               # Store data as key-value constructions
+    {height 2.1},
+    {age 19}
+  }
+  {
+    {name 'Alex},                 # Strings with no whitespace can just be prefixed (no closing quote)
+    {height 1.95},
+    {age 20}
+  }
+  {
+    {name 'Matthew},
+    {height 2.05},
+    {age 18}
+  }
+  {
+    {name 'Matthew},
+    {height 1.80},
+    {age 17}
+  }
+};
+
+map construction transformation :: construction ~> {} [@acc | [transformation @]]
+
+tallPeople := people:height > 2.0;        # Filter people by predicate
+jAndA := people:name = 'Jeremy|'Alex;     # Filter set-style using union within predicate
+intersection := tallPeople&jAndA;         # Get intersection of two constructions
+totalAge := tallPeople ~> 0 [@acc + @.height];
+names := [map people [@.name]]            # Get names of people
+
 ```
